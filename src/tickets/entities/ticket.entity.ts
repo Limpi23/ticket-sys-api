@@ -15,6 +15,9 @@ export class Ticket {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'varchar', unique: true })
+  ticketNumber: string;
+
   @Column({ type: 'text' })
   title: string;
 

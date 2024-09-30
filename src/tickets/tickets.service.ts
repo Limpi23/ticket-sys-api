@@ -25,30 +25,45 @@ export class TicketsService {
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
     const { user: createUserDto } = createTicketDto;
 
-    // 1. Buscar si el usuario ya existe por su email
     let user = await this.userRepository.findOne({
       where: { email: createUserDto.email },
     });
 
-    // 2. Si el usuario no existe, lo creamos
     if (!user) {
       user = this.userRepository.create({
         email: createUserDto.email,
         phone: createUserDto.phone,
       });
-
-      // Guardar el nuevo usuario en la base de datos
       user = await this.userRepository.save(user);
     }
 
-    // 3. Crear el nuevo ticket y asignarle el usuario
+    const ticketNumber = await this.generateTicketNumber();
+
     const newTicket = this.ticketRepository.create({
       ...createTicketDto,
-      user: user, // Asignar el usuario encontrado o recién creado
+      user: user,
+      ticketNumber,
     });
 
-    // Guardar el ticket en la base de datos
     return this.ticketRepository.save(newTicket);
+  }
+
+  async generateTicketNumber(): Promise<string> {
+    const lastTicket = await this.ticketRepository.findOne({
+      order: { ticketNumber: 'DESC' },
+    });
+
+    let newTicketNumber = 'TKS-0001';
+
+    if (lastTicket) {
+      const lastTicketNumber = lastTicket.ticketNumber;
+      const lastNumber = parseInt(lastTicketNumber.split('-')[1], 10);
+
+      const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+      newTicketNumber = `TKS-${nextNumber}`;
+    }
+
+    return newTicketNumber;
   }
 
   async update(id: number, updatedTicket: Partial<Ticket>): Promise<Ticket> {
